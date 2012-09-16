@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-#import re
 import operator
-import urllib
+#import urllib
 import time
-import cookielib
-from base64 import b64decode
+#import cookielib
+#from base64 import b64decode
 
 NAME = "Amazon Video on Demand"
 ICON = "icon-default.png"
@@ -20,62 +19,43 @@ def Start():
 
 	Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
 
-
-	#MediaContainer.title1 = NAME
-	#MediaContainer.art = R(ART)
-	#MediaContainer.viewGroup = "List"
 	ObjectContainer.title1 = NAME
 	ObjectContainer.art = R(ART)
 	ObjectContainer.view_group = "List"
 	
-
-	#DirectoryItem.thumb = R(ICON)
 	DirectoryObject.thumb = R(ICON)
 
 ####################################################################################################
 def MainMenu():
-    #dir = MediaContainer(viewMode="List")
     oc = ObjectContainer()
 
     usedSelections={'genre':False, 'network':False}
     
-    #dir.Append(Function(DirectoryItem(MovieList, "Movies")))
     oc.add(DirectoryObject(key=Callback(MovieList), title="Movies"))
 
-    #dir.Append(Function(DirectoryItem(TVList, "TV"), url="/s/ref=sr_nr_n_1?rh=n%3A2625373011%2Cn%3A%212644981011%2Cn%3A%212644982011%2Cn%3A2858778011%2Cp_85%3A2470955011%2Cn%3A2864549011&bbn=2858778011&ie=UTF8&qid=1334413870&rnid=2858778011", usedSelections=usedSelections))
     oc.add(DirectoryObject(key=Callback(TVList, url=TV_LIST, usedSelections=usedSelections), title="TV"))
 
-    #dir.Append(Function(DirectoryItem(SearchMenu, "Search")))
+    oc.add(DirectoryObject(key=Callback(SearchMenu), title="Search"))
     
-    #dir.Append(Function(DirectoryItem(Library, "Your Library")))
     oc.add(DirectoryObject(key=Callback(Library), title="Your Library"))
 
-    #dir.Append(PrefsItem(L('Preferences'), thumb=R(ICON)))
     oc.add(PrefsObject(title=L("Preferences"), thumb=R(ICON)))
     
-    #return dir
     return oc
 
 ####################################################################################################
-#def SearchMenu(sender):
 def SearchMenu():
-    #dir = MediaContainer(viewMode="List")
     oc = ObjectContainer()
-    #dir.Append(Function(InputDirectoryItem(Search, "Search Movies", "Search Amazon Prime for Movies", thumb = R(ICON)), tvSearch=False))
+
     oc.add(InputDirectoryObject(key=Callback(Search, tvSearch=False), title="Search Movies", summary="Search Amazon Prime for Movies", thumb=R(ICON)))
-    #dir.Append(Function(InputDirectoryItem(Search, "Search TV Shows", "Search Amazon Prime for TV Shows", thumb = R(ICON))))
     oc.add(InputDirectoryObject(key=Callback(Search), title="Search TV Shows", summary="Search Amazon Prime for TV Shows", thumb=R(ICON)))
     
-    #return dir
     return oc
 
 ####################################################################################################
-#def Search(sender, query, url = None, tvSearch=True):
 def Search(query, url = None, tvSearch=True):
     string = "/s/ref=sr_nr_n_0?rh=n%3A2625373011%2Cn%3A%212644981011%2Cn%3A%212644982011%2Cn%3A2858778011%2Ck%3A"
 
-
-    #string += urllib.quote_plus(query)
     string += String.Quote(query, usePlus=True)
     
     if tvSearch:
@@ -83,7 +63,6 @@ def Search(query, url = None, tvSearch=True):
     else:
         string += "%2Cp_85%3A2470955011%2Cn%3A2858905011&bbn=2858778011&keywords="
     
-    #string += urllib.quote_plus(query)
     string += String.Quote(query, usePlus=True)
 
     if tvSearch:
@@ -99,9 +78,7 @@ def Login():
     cookies = HTTP.GetCookiesForURL('https://www.amazon.com/gp/sign-in.html?tag=%s' % ASSOC_TAG)
 
     sessId = None
-    
-
-    
+        
     params = {
         'path': '/gp/homepage.html',
         'useRedirectOnSuccess': '1',
@@ -116,32 +93,22 @@ def Login():
     x = HTTP.Request('https://www.amazon.com/gp/flex/sign-in/select.html?ie=UTF8&protocol=https&tag=%s' % ASSOC_TAG,values=params,errors='replace')
 
 ####################################################################################################
-#def Library(sender):
 def Library():
     Login()
-    #dir = MediaContainer(viewMode="List")
     oc = ObjectContainer()
     
-    #dir.Append(Function(DirectoryItem(LibrarySpecific, "Movies"), movies=True))
     oc.add(DirectoryObject(key=Callback(LibrarySpecific, movies=True), title="Movies"))
-    #dir.Append(Function(DirectoryItem(LibrarySpecific, "TV"), movies=False)) 
     oc.add(DirectoryObject(key=Callback(LibrarySpecific, movies=False), title="TV"))
     
-    #return dir
     return oc
 
 ####################################################################################################    
-#def LibrarySpecific(sender, movies=True):
 def LibrarySpecific(movies=True):
-    #pageList = HTTP.Request("https://www.amazon.com/gp/video/library")
     if movies:
-        #pageList = HTTP.Request("https://www.amazon.com/gp/video/library/movie?show=all")
 	url = "https://www.amazon.com/gp/video/library/movie?show=all"
     else:
-        #pageList = HTTP.Request("https://www.amazon.com/gp/video/library/tv?show=all")
 	url = "https://www.amazon.com/gp/video/library/tv?show=all"
     
-    #element = HTML.ElementFromString(pageList.content)
     element = HTML.ElementFromURL(url)
     
     purchasedList = element.xpath('//*[@class="lib-item"]')
@@ -158,59 +125,44 @@ def LibrarySpecific(movies=True):
         else:
             seasons.append((title, asin, imageLink))
         
-
-    #dir = MediaContainer(viewMode="List")
     oc = ObjectContainer()
     
     for i in range(0, len(videos)):
-        #dir.Append(
-        #        WebVideoItem(
-        #        url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1],
-        #        title = videos[i][0],
-        #        thumb=Callback(Thumb, url=videos[i][2] )
-        #        )
-        #    )
 	if movies:
 		oc.add(MovieObject(
-			url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1],
+			key=Callback(GetVideo, url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1]),
+			rating_key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1],
 			title=videos[i][0],
 			thumb=Resource.ContentsOfURLWithFallback(url=videos[i][0], fallback=ICON)
 			)
 		)
 	else:
 		oc.add(EpisodeObject(
-			url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1],
+			key=Callback(GetVideo, url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1]),
+			rating_key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1],
 			title=videos[i][0],
 			thumb=Resource.ContentsOfURLWithFallback(url=videos[i][0], fallback=ICON)
 			)
 		)
     
     for i in range(0, len(seasons)):
-        #dir.Append(Function(DirectoryItem(TVIndividualSeason, title=seasons[i][0], thumb=Callback(Thumb, url=seasons[i][2] )), url="https://www.amazon.com/gp/product/" + seasons[i][1]))
 	oc.add(DirectoryObject(Key=Callback(TVIndividualSeason, url="https://www.amazon.com/gp/product/" + seasons[i][1]),
 		title=seasons[i][0],
 		thumb=Resource.ContentsOfURLWithFallback(url=seasons[i][2], fallback=ICON)))
 
-    #return dir
     return oc
     
 ####################################################################################################
-#def MovieList(sender, url=None, usedSelections = None):
 def MovieList(url=None, usedSelections = None):
-    #dir = MediaContainer(viewMode="List")
     oc = ObjectContainer()
 
-    #dir.Append(Function(InputDirectoryItem(Search, "Search Movies", "Search Amazon Prime for Movies", thumb = R(ICON)), tvSearch=False))
     oc.add(InputDirectoryObject(key=Callback(Search, tvSearch=False), title="Search Movies", summary="Search Amazon Prime for Movies", thumb=R(ICON)))
 
-    #return dir
     return oc
 
 ####################################################################################################    
-#def TVList(sender, url=None, usedSelections = None):
 def TVList(url=None, usedSelections = None):
 
-    #dir = MediaContainer(viewMode="List")
     oc = ObjectContainer()
     
     shownUnorganized = False
@@ -223,14 +175,11 @@ def TVList(url=None, usedSelections = None):
         tvShowsLink = links[len(links)-1]
         
         if "sr_sa_p_lbr_tv_series_brow" in tvShowsLink:
-            #dir.Append(Function(DirectoryItem(TVShows, "Shows"), url=tvShowsLink))
 	    oc.add(DirectoryObject(key=Callback(TVShows, url=tvShowsLink), title="Shows"))
         else:
-            #dir.Append(Function(DirectoryItem(TVShowsNotNice, "Shows"), url=url))
 	    oc.add(DirectoryObject(key=Callback(TVShowsNotNice, url=url), title="Shows"))
 
     else:
-        #dir.Append(Function(DirectoryItem(ResultsList, "All TV Shows (Unorganized)"), url=url, onePage=True))
 	oc.add(DirectoryObject(key=Callback(ResultsList, url=url, onePage=True), title="All TV Shows (Unorganized)"))
         shownUnorganized = True
         
@@ -241,10 +190,8 @@ def TVList(url=None, usedSelections = None):
             genresLink = links[len(links)-1]
         
             if "sr_sa_p_n_theme_browse-bin" in genresLink:
-                #dir.Append(Function(DirectoryItem(TVSubCategories, "Genres"), url=genresLink, category="Genre", usedSelections=usedSelections ))
 		oc.add(DirectoryObject(key=Callback(TVSubCategories, url=genresLink, category="Genre", usedSelections=usedSelections), title="Genres"))
             else:
-                #dir.Append(Function(DirectoryItem(TVNotNiceSubCategories, "Genres"), url=url, category="Genre", usedSelections=usedSelections ))
 		oc.add(DirectoryObject(key=Callback(TVNotNiceSubCategories, url=url, category="Genre", usedSelections=usedSelections), title="Genres"))
             
             
@@ -255,26 +202,17 @@ def TVList(url=None, usedSelections = None):
             networksLink = links[len(links)-1]
 
             if "sr_sa_p_studio" in networksLink:
-                #dir.Append(Function(DirectoryItem(TVSubCategories, "Networks"), url=networksLink, category="Content Provider", usedSelections=usedSelections ))
 		oc.add(DirectoryObject(key=Callback(TVSubCategories, url=networksLink, category="Content Provider", usedSelections=usedSelections), title="Networks"))
             else:
-                #dir.Append(Function(DirectoryItem(TVNotNiceSubCategories, "Networks"), url=url, category="Content Provider", usedSelections=usedSelections ))
 		oc.add(DirectoryObject(key=Callback(TVNotNiceSubCategories, url=url, category="Content Provider", usedSelections=usedSelections), title="Networks"))
     
 
     if not shownUnorganized:
-        #dir.Append(Function(DirectoryItem(ResultsList, "All TV Shows (Unorganized)"), url=url, onePage=True))
 	oc.add(DirectoryObject(key=Callback(ResultsList, url=url, onePage=True), title="All TV Shows (Unorganized)"))
 
-        
-        
-   
-        
-    #return dir
     return oc
     
 ####################################################################################################    
-#def TVSubCategories(sender, url=None, category=None, usedSelections=None):
 def TVSubCategories(url=None, category=None, usedSelections=None):
     if category=='Content Provider':
         usedSelections['network'] = True
@@ -288,20 +226,15 @@ def TVSubCategories(url=None, category=None, usedSelections=None):
     listOfGenresLinks = tvGenrePage.xpath("//*[@class='c3_ref refList']//a/@href")
     listOfGenres = tvGenrePage.xpath("//*[@class='c3_ref refList']//a")
     listOfGenresNames = listOfGenres[0].xpath("//*[@class='refinementLink']/text()")
-    
-    
-    #dir = MediaContainer(viewMode="list")
+        
     oc = ObjectContainer()
     
     for i in range(0, len(listOfGenresLinks)):
-        #dir.Append(Function(DirectoryItem(TVList, title=listOfGenresNames[i]), usedSelections=usedSelections, url=listOfGenresLinks[i]))
 	oc.add(DirectoryObjecy(key=Callback(TVList, usedSelections=usedSelections, url=listOfGenresLinks[i]), title=listOfGenresNames[i]))
-    
-    #return dir
+
     return oc
 
 ####################################################################################################
-#def TVNotNiceSubCategories(sender, url=None, category=None, usedSelections=None):
 def TVNotNiceSubCategories(url=None, category=None, usedSelections=None):
     if category=='Content Provider':
         usedSelections['network'] = True
@@ -316,50 +249,38 @@ def TVNotNiceSubCategories(url=None, category=None, usedSelections=None):
     
     genreLinks = tvGenrePage.xpath("//div[@id='refinements']//h2[. = '" + category + "']/following-sibling::ul[1 = count(preceding-sibling::h2[1] | ../h2[. = '" + category + "'])]/li/a/@href")
     
-    pairs = list()
-    
+    pairs = list()    
     
     for i in range(0, len(genreList)):
         pairs.append((genreList[i], genreLinks[i]))
         
     sortedPairs = sorted(pairs, key=operator.itemgetter(0))
               
-    #dir = MediaContainer(viewMode="list")
     oc = ObjectContainer()
         
     for i in range(0, len(genreList)):
-        #dir.Append(Function(DirectoryItem(TVList, title=sortedPairs[i][0]), usedSelection=usedSelection, url=sortedPairs[i][1]))
 	oc.add(DirectoryObject(key=Callback(TVList, usedSelection=usedSelection, url=sortedPairs[i][1]), title=sortedPairs[i][0]))
     
-    #return dir
     return oc
 
 ####################################################################################################
-#def TVShows(sender, url=None):
 def TVShows(url=None):	
     tvShowPage = HTML.ElementFromURL("http://www.amazon.com" + url)
     
     listOfShowsLinks = tvShowPage.xpath("//*[@class='c3_ref refList']//a/@href")
     listOfShows = tvShowPage.xpath("//*[@class='c3_ref refList']//a")
     
-    #dir = MediaContainer(viewMode="list")
     oc = ObjectContainer()
     
     if len(listOfShows) > 0:
         listOfShowsNames = listOfShows[0].xpath("//*[@class='refinementLink']/text()")
     
-
-        
-    
         for i in range(0, len(listOfShowsLinks)):
-            #dir.Append(Function(DirectoryItem(ResultsList, title=listOfShowsNames[i]), url=listOfShowsLinks[i], sort=True))
 	    oc.add(DirectoryObject(key=Callback(ResultsList, url=listOfShowsLinks[i], sort=True), title=listOfShowsNames[i]))
     
-    #return dir
     return oc
     
 ####################################################################################################
-#def TVShowsNotNice(sender, url=None):
 def TVShowsNotNice(url=None):	
     tvGenrePage = HTML.ElementFromURL("http://www.amazon.com" + url)
     
@@ -375,18 +296,14 @@ def TVShowsNotNice(url=None):
         
     sortedPairs = sorted(pairs, key=operator.itemgetter(0))
               
-    #dir = MediaContainer(viewMode="list")
     oc = ObjectContainer()
         
     for i in range(0, len(showList)):
-        #dir.Append(Function(DirectoryItem(TVList, title=sortedPairs[i][0]), url=sortedPairs[i][1]))
 	oc.add(DirectoryObject(key=Callback(TVList, url=sortedPairs[i][1]), title=sortedPairs[i][0]))
     
-    #return dir
     return oc
 
 ####################################################################################################
-#def ResultsList(sender, url = None, onePage=False, tvList = True, sort=False):
 def ResultsList(url = None, onePage=False, tvList = True, sort=False):     
     
     #dir = MediaContainer(viewMode="list")
@@ -433,8 +350,7 @@ def ResultsList(url = None, onePage=False, tvList = True, sort=False):
             else:
                 nextLoopQuit = True
         else:
-            #return MessageContainer("Sorry, no results.", "")
-	    return ObjectContainer(header=NAME, message="Sorry, no results.")
+            return ObjectContainer(header=NAME, message="Sorry, no results.")
     
     sortedSeasonPairs = seasons
     
@@ -444,20 +360,13 @@ def ResultsList(url = None, onePage=False, tvList = True, sort=False):
 
     if tvList:
         for i in range(0, len(sortedSeasonPairs)):
-            #dir.Append(Function(DirectoryItem(TVIndividualSeason, title=sortedSeasonPairs[i][0], thumb=Callback(Thumb, url=sortedSeasonPairs[i][2] )), url=sortedSeasonPairs[i][1]))
-	    oc.add(DirectoryObject(key=Callback(TVIndividualSeason, url=sortedSeasonPairs[i][1]), title=sortedSeasonPairs[i][0], thumb=Resource.ContentsOfURLWithFallback(url=sortedSeasonPairs[i][2], fallback=ICON)))
+            oc.add(DirectoryObject(key=Callback(TVIndividualSeason, url=sortedSeasonPairs[i][1]), title=sortedSeasonPairs[i][0], thumb=Resource.ContentsOfURLWithFallback(url=sortedSeasonPairs[i][2], fallback=ICON)))
     else:
         for i in range(0, len(sortedSeasonPairs)):
-            #dir.Append(
-            #WebVideoItem(
-            #    url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + sortedSeasonPairs[i][3],
-            #    title = sortedSeasonPairs[i][0],
-            #    thumb=Callback(Thumb, url=sortedSeasonPairs[i][2] )
-            #    )
-            #)
-	    oc.add(
+            oc.add(
 		EpisodeObject(
-			url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + sortedSeasonPairs[i][3],
+			key=Callback(GetVideo, url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + sortedSeasonPairs[i][3]),
+			rating_key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + sortedSeasonPairs[i][3],
 			title = sortedSeasonPairs[i][0],
 			thumb=Resource.ContentsOfURLWithFallback(url=sortedSeasonPairs[i][2], fallback=ICON)
 		)
@@ -465,14 +374,11 @@ def ResultsList(url = None, onePage=False, tvList = True, sort=False):
             
 
     if onePage and len(newURL) > 0:
-        #dir.Append(Function(DirectoryItem(ResultsList, title="Next Page"), url=newURL, onePage = True))
 	oc.add(DirectoryObject(key=Callback(ResultsList, url=newURL, onePage = True), title="Next Page"))
 
-    #return dir
     return oc
     
 ####################################################################################################    
-#def TVIndividualSeason(sender, url = None):
 def TVIndividualSeason(url = None):
     episodesPage = HTML.ElementFromURL(url)
     
@@ -487,39 +393,24 @@ def TVIndividualSeason(url = None):
         listOfEpisodesASIN.append(listOfEpisodesTable[i].xpath('@asin')[0])
         listOfEpisodesSummaries.append(listOfEpisodesTable[i].xpath('td/div/text()')[1])
 
-    #dir = MediaContainer(viewMode="list")
     oc = ObjectContainer()
     
     for i in range(0, len(listOfEpisodesTable)):
-        #dir.Append(
-        #    WebVideoItem(
-        #        url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + listOfEpisodesASIN[i],
-        #        title = listOfEpisodesTitles[i],
-        #        summary = listOfEpisodesSummaries[i]
-        #        )
-        #    )
 	oc.add(
 		EpisodeObject(
-			url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + listOfEpisodesASIN[i],
+			key=Callback(GetVideo, url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + listOfEpisodesASIN[i]),
+			rating_key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + listOfEpisodesASIN[i],
 		        title = listOfEpisodesTitles[i],
 		        summary = listOfEpisodesSummaries[i],
 			thumb = R(ICON) ###Check to see if there's an episode/season/series thumb accessible###
 		)
 	)
-    
-    
-    #return dir
+
     return oc
 
 ####################################################################################################
-#def Thumb(url):
-#    try:
-#        data = HTTP.Request(url, cacheTime = CACHE_1MONTH).content
-#        return DataObject(data, 'image/jpeg')
-#    except:
-#        return Redirect(R(ICON))
-
-
+def GetVideo(url):
+	return
 '''
 def GETSTREAMS(getstream):
     data = common.getURL(getstream,'atv-ps.amazon.com',useCookie=True)
