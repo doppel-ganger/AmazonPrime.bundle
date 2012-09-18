@@ -6,10 +6,7 @@ RE_IDENT_IP	= Regex('<fcs><ip>(.+?)</ip></fcs>')
 
 
 import operator
-#import urllib
 import time
-#import cookielib
-#from base64 import b64decode
 
 NAME = "Amazon Video on Demand"
 ICON = "icon-default.png"
@@ -147,14 +144,7 @@ def LibrarySpecific(movies=True):
                                 thumb=videos[i][0]
                                 )
                 oc.add(video)
-                #oc.add(MovieObject(
-                #        key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1],
-                #        rating_key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1],
-                #       items=Callback(GetVideoObjects, url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1]),
-                #        title=videos[i][0],
-                #        thumb=Resource.ContentsOfURLWithFallback(url=videos[i][0], fallback=ICON)
-                #        )
-                #)
+
         else:
                 video = GetVideoObject(
                                 url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1],
@@ -163,14 +153,6 @@ def LibrarySpecific(movies=True):
                                 thumb=videos[i][0]
                                 )
                 oc.add(video)
-                #oc.add(EpisodeObject(
-                #        key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1],
-                #        rating_key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1],
-                #       items=Callback(GetVideoObjects, url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + videos[i][1]),
-                #        title=videos[i][0],
-                #        thumb=Resource.ContentsOfURLWithFallback(url=videos[i][0], fallback=ICON)
-                #        )
-                #)
     
     for i in range(0, len(seasons)):
         oc.add(DirectoryObject(Key=Callback(TVIndividualSeason, url="https://www.amazon.com/gp/product/" + seasons[i][1]),
@@ -395,17 +377,7 @@ def ResultsList(url = None, onePage=False, tvList = True, sort=False):
                                 title=sortedSeasonPairs[i][0],
                                 thumb=sortedSeasonPairs[i][2]
                                 )
-                oc.add(video)
-                #oc.add(
-                        #EpisodeObject(
-                        #key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + sortedSeasonPairs[i][3],
-                        #rating_key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + sortedSeasonPairs[i][3],
-                        #items=Callback(GetVideoObjects, url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + sortedSeasonPairs[i][3]),
-                        #title = sortedSeasonPairs[i][0],
-                        #thumb=Resource.ContentsOfURLWithFallback(url=sortedSeasonPairs[i][2], fallback=ICON)
-                #)
-            #)
-            
+                oc.add(video)  
 
     if onePage and len(newURL) > 0:
         oc.add(DirectoryObject(key=Callback(ResultsList, url=newURL, onePage = True), title="Next Page"))
@@ -433,17 +405,6 @@ def TVIndividualSeason(url = None):
         video = GetVideoObject(url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + listOfEpisodesASIN[i], video_type='episode', title=listOfEpisodesTitles[i],
                                summary=listOfEpisodesSummaries[i])
         oc.add(video)
-        #oc.add(
-        #        EpisodeObject(
-        #                key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + listOfEpisodesASIN[i],
-        #                rating_key="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=" + listOfEpisodesASIN[i],
-        #               #items=Callback(GetVideoObjects, url="http://www.amazon.com/gp/video/streaming/mini-mode.html?asin=%s" % listOfEpisodesASIN[i]),
-        #               items=[MediaObject(parts = [PartObject(key=Callback(PlayVideo, url=url, bitrate=2500))], bitrate = 2500)],
-        #               title = listOfEpisodesTitles[i],
-        #                summary = listOfEpisodesSummaries[i],
-        #                thumb = R(ICON)
-        #        )
-        #)
 
     return oc
 
@@ -513,12 +474,26 @@ def GetVideoObject(url, video_type, title='', summary='', thumb='None'):
 ####################################################################################################
 @indirect
 def PlayVideo(url, bitrate):
+	BITRATES = [348, 664, 996, 1328, 2500]
+	index = BITRATES.index(bitrate)
         swfUrl, values, owned, cookies = GetFlashVars(url)
         values['deviceID'] = values['customerID'] + str(int(time.time() * 1000)) + values['asin']
         streamUrl =  STREAM_URL % (values['asin'], values['deviceTypeID'], values['token'], FIRMWARE, values['customerID'], DEVICEID)
         stream_data = JSON.ObjectFromURL(streamUrl, headers={'Cookie':cookies})
         streams = stream_data['message']['body']['urlSets']['streamingURLInfoSet'][0]['streamingURLInfo']
-        rtmp_url = streams[-1]['url']
+	while index > -1:
+		try:
+			rtmp_url = streams[index]['url']
+			try:
+				if streams[index]['drm'] != '':
+					Log('This video contains DRM and may not play.')
+			except:
+				pass
+			break
+		except:
+			index = index -1
+
+        #rtmp_url = streams[-1]['url']
 	
 	protocolSplit = rtmp_url.split("://")
 	pathSplit   = protocolSplit[1].split("/")
@@ -526,101 +501,14 @@ def PlayVideo(url, bitrate):
 	appName     = protocolSplit[1].split(hostname + "/")[1].split('/')[0]    
 	streamAuth  = rtmp_url.split(appName+'/')[1].split('?')
 	stream      = streamAuth[0].replace('.mp4','')
-	Log(stream)
 	auth        = streamAuth[1]
 	identurl = 'http://'+hostname+'/fcs/ident'
 	ident = HTTP.Request(identurl).content
 	ip = RE_IDENT_IP.findall(ident)[0]
 	basertmp = 'rtmpe://'+ip+':1935/'+appName+'?_fcs_vhost='+hostname+'&ovpfv=2.1.4&'+auth
-	Log(basertmp)
-	finalUrl = basertmp
-	#finalUrl += " playpath=" + stream 
-	#finalUrl += " pageurl=" + url
-	#finalUrl += " swfurl=" + swfUrl + " swfvfy=true"
 	
         return IndirectResponse(VideoClipObject, key=RTMPVideoURL(url=basertmp, clip=stream, swf_url=swfUrl))
-	#return IndirectResponse(VideoClipObject, key=RTMPVideoURL(url=finalUrl))
-'''
-    try:
-        rtmpurls, streamSessionID, cdn, title = GETSTREAMS(getstream)
-    except:
-        return PLAYTRAILER_RESOLVE()
-    if cdn == 'limelight':
-        xbmcgui.Dialog().ok('Limelight CDN','Limelight uses swfverfiy2. Playback may fail.')
-    if rtmpurls <> False:
-        basertmp, ip = PLAY(rtmpurls,swfUrl=swfUrl,title=title)
-    if streamSessionID <> False:
-        epoch = str(int(time.mktime(time.gmtime()))*1000)
-        USurl =  'https://atv-ps.amazon.com/cdp/usage/UpdateStream'
-        USurl += '?device_type_id='+values['deviceTypeID']
-        USurl += '&deviceTypeID='+values['deviceTypeID']
-        USurl += '&streaming_session_id='+streamSessionID
-        USurl += '&operating_system='
-        USurl += '&timecode=45.003'
-        USurl += '&flash_version=WIN%2010,3,181,14%20PlugIn'
-        USurl += '&asin='+values['asin']
-        USurl += '&token='+values['token']
-        USurl += '&browser='+urllib.quote_plus(values['userAgent'])
-        USurl += '&server_id='+ip
-        USurl += '&client_version='+swfUrl.split('/')[-1]
-        USurl += '&unique_browser_id='+values['UBID']
-        USurl += '&device_id='+values['deviceID']
-        USurl += '&format=json'
-        USurl += '&version=1'
-        USurl += '&page_type='+values['pageType']
-        USurl += '&start_state=Video'
-        USurl += '&amazon_session_id='+values['sessionID']
-        USurl += '&event=STOP'
-        USurl += '&firmware=WIN%2010,3,181,14%20PlugIn'
-        USurl += '&customerID='+values['customerID']
-        USurl += '&deviceID='+values['deviceID']
-        USurl += '&source_system=http://www.amazon.com'
-        USurl += '&http_referer=ecx.images-amazon.com'
-        USurl += '&event_timestamp='+epoch
-        USurl += '&encrypted_customer_id='+values['customerID']
-        print common.getURL(USurl,'atv-ps.amazon.com',useCookie=True)
 
-        epoch = str(int(time.mktime(time.gmtime()))*1000)
-        surl =  'https://atv-ps.amazon.com/cdp/usage/ReportStopStreamEvent'
-        surl += '?deviceID='+values['deviceID']
-        surl += '&source_system=http://www.amazon.com'
-        surl += '&format=json'
-        surl += '&event_timestamp='+epoch
-        surl += '&encrypted_customer_id='+values['customerID']
-        surl += '&http_referer=ecx.images-amazon.com'
-        surl += '&device_type_id='+values['deviceTypeID']
-        surl += '&download_bandwidth=9926.295518207282'
-        surl += '&device_id='+values['deviceTypeID']
-        surl += '&from_mode=purchased'
-        surl += '&operating_system='
-        surl += '&version=1'
-        surl += '&flash_version=LNX%2010,3,181,14%20PlugIn'
-        surl += '&url='+urllib.quote_plus(basertmp)
-        surl += '&streaming_session_id='+streamSessionID
-        surl += '&browser='+urllib.quote_plus(values['userAgent'])
-        surl += '&server_id='+ip
-        surl += '&client_version='+swfUrl.split('/')[-1]
-        surl += '&unique_browser_id='+values['UBID']
-        surl += '&amazon_session_id='+values['sessionID']
-        surl += '&page_type='+values['pageType']
-        surl += '&start_state=Video'
-        surl += '&token='+values['token']
-        surl += '&to_timecode=3883'
-        surl += '&streaming_bit_rate=348'
-        surl += '&new_streaming_bit_rate=2500'
-        surl += '&asin='+values['asin']
-        surl += '&deviceTypeID='+values['deviceTypeID']
-        surl += '&firmware=WIN%2010,3,181,14%20PlugIn'
-        surl += '&customerID='+values['customerID']
-        print common.getURL(surl,'atv-ps.amazon.com',useCookie=True)
-        if values['pageType'] == 'movie':
-            import movies as moviesDB
-            moviesDB.watchMoviedb(values['asin'])
-        if values['pageType'] == 'tv':
-            import tv as tvDB
-            tvDB.watchEpisodedb(values['asin'])
-        return
-'''
 ####################################################################################################
 def GetFlashVars(url):
         Login()
@@ -662,149 +550,3 @@ def GetFlashVars(url):
         return swfUrl, values, owned, cookies
 
 ####################################################################################################
-def GetStreams(url):
-        return
-'''
-def PLAYVIDEO():
-    if not os.path.isfile(common.COOKIEFILE):
-        common.mechanizeLogin()
-    #try:
-    swfUrl, values, owned = GETFLASHVARS(common.args.url)
-    #if not owned:
-    #    return PLAYTRAILER_RESOLVE() 
-    values['deviceID'] = values['customerID'] + str(int(time.time() * 1000)) + values['asin']
-    getstream  = 'https://atv-ps.amazon.com/cdp/catalog/GetStreamingUrlSets'
-    #getstream  = 'https://atv-ext.amazon.com/cdp/cdp/catalog/GetStreamingUrlSets'
-    getstream += '?asin='+values['asin']
-    getstream += '&deviceTypeID='+values['deviceTypeID']
-    getstream += '&firmware=WIN%2010,0,181,14%20PlugIn'
-    getstream += '&customerID='+values['customerID']
-    getstream += '&deviceID='+values['deviceID']
-    getstream += '&token='+values['token']
-    getstream += '&xws-fa-ov=false'
-    getstream += '&format=json'
-    getstream += '&version=1'
-    try:
-        rtmpurls, streamSessionID, cdn, title = GETSTREAMS(getstream)
-    except:
-        return PLAYTRAILER_RESOLVE()
-    if cdn == 'limelight':
-        xbmcgui.Dialog().ok('Limelight CDN','Limelight uses swfverfiy2. Playback may fail.')
-    if rtmpurls <> False:
-        basertmp, ip = PLAY(rtmpurls,swfUrl=swfUrl,title=title)
-    if streamSessionID <> False:
-        epoch = str(int(time.mktime(time.gmtime()))*1000)
-        USurl =  'https://atv-ps.amazon.com/cdp/usage/UpdateStream'
-        USurl += '?device_type_id='+values['deviceTypeID']
-        USurl += '&deviceTypeID='+values['deviceTypeID']
-        USurl += '&streaming_session_id='+streamSessionID
-        USurl += '&operating_system='
-        USurl += '&timecode=45.003'
-        USurl += '&flash_version=WIN%2010,3,181,14%20PlugIn'
-        USurl += '&asin='+values['asin']
-        USurl += '&token='+values['token']
-        USurl += '&browser='+urllib.quote_plus(values['userAgent'])
-        USurl += '&server_id='+ip
-        USurl += '&client_version='+swfUrl.split('/')[-1]
-        USurl += '&unique_browser_id='+values['UBID']
-        USurl += '&device_id='+values['deviceID']
-        USurl += '&format=json'
-        USurl += '&version=1'
-        USurl += '&page_type='+values['pageType']
-        USurl += '&start_state=Video'
-        USurl += '&amazon_session_id='+values['sessionID']
-        USurl += '&event=STOP'
-        USurl += '&firmware=WIN%2010,3,181,14%20PlugIn'
-        USurl += '&customerID='+values['customerID']
-        USurl += '&deviceID='+values['deviceID']
-        USurl += '&source_system=http://www.amazon.com'
-        USurl += '&http_referer=ecx.images-amazon.com'
-        USurl += '&event_timestamp='+epoch
-        USurl += '&encrypted_customer_id='+values['customerID']
-        print common.getURL(USurl,'atv-ps.amazon.com',useCookie=True)
-
-        epoch = str(int(time.mktime(time.gmtime()))*1000)
-        surl =  'https://atv-ps.amazon.com/cdp/usage/ReportStopStreamEvent'
-        surl += '?deviceID='+values['deviceID']
-        surl += '&source_system=http://www.amazon.com'
-        surl += '&format=json'
-        surl += '&event_timestamp='+epoch
-        surl += '&encrypted_customer_id='+values['customerID']
-        surl += '&http_referer=ecx.images-amazon.com'
-        surl += '&device_type_id='+values['deviceTypeID']
-        surl += '&download_bandwidth=9926.295518207282'
-        surl += '&device_id='+values['deviceTypeID']
-        surl += '&from_mode=purchased'
-        surl += '&operating_system='
-        surl += '&version=1'
-        surl += '&flash_version=LNX%2010,3,181,14%20PlugIn'
-        surl += '&url='+urllib.quote_plus(basertmp)
-        surl += '&streaming_session_id='+streamSessionID
-        surl += '&browser='+urllib.quote_plus(values['userAgent'])
-        surl += '&server_id='+ip
-        surl += '&client_version='+swfUrl.split('/')[-1]
-        surl += '&unique_browser_id='+values['UBID']
-        surl += '&amazon_session_id='+values['sessionID']
-        surl += '&page_type='+values['pageType']
-        surl += '&start_state=Video'
-        surl += '&token='+values['token']
-        surl += '&to_timecode=3883'
-        surl += '&streaming_bit_rate=348'
-        surl += '&new_streaming_bit_rate=2500'
-        surl += '&asin='+values['asin']
-        surl += '&deviceTypeID='+values['deviceTypeID']
-        surl += '&firmware=WIN%2010,3,181,14%20PlugIn'
-        surl += '&customerID='+values['customerID']
-        print common.getURL(surl,'atv-ps.amazon.com',useCookie=True)
-        if values['pageType'] == 'movie':
-            import movies as moviesDB
-            moviesDB.watchMoviedb(values['asin'])
-        if values['pageType'] == 'tv':
-            import tv as tvDB
-            tvDB.watchEpisodedb(values['asin'])
-
-def PLAY(rtmpurls,swfUrl,Trailer=False,resolve=True,title=False):
-    print rtmpurls
-    quality = [0,2500,1328,996,664,348]
-    lbitrate = quality[int(common.addon.getSetting("bitrate"))]
-    mbitrate = 0
-    streams = []
-    for data in rtmpurls:
-        url = data['url']
-        bitrate = int(data['bitrate'])
-        if lbitrate == 0:
-            streams.append([bitrate,url])
-        elif bitrate >= mbitrate and bitrate <= lbitrate:
-            mbitrate = bitrate
-            rtmpurl = url
-    if lbitrate == 0:        
-        quality=xbmcgui.Dialog().select('Please select a quality level:', [str(stream[0])+'kbps' for stream in streams])
-        if quality!=-1:
-            rtmpurl = streams[quality][1]
-    protocolSplit = rtmpurl.split("://")
-    pathSplit   = protocolSplit[1].split("/")
-    hostname    = pathSplit[0]
-    appName     = protocolSplit[1].split(hostname + "/")[1].split('/')[0]    
-    streamAuth  = rtmpurl.split(appName+'/')[1].split('?')
-    stream      = streamAuth[0].replace('.mp4','')
-    auth        = streamAuth[1]
-    identurl = 'http://'+hostname+'/fcs/ident'
-    ident = common.getURL(identurl)
-    ip = re.compile('<fcs><ip>(.+?)</ip></fcs>').findall(ident)[0]
-    basertmp = 'rtmpe://'+ip+':1935/'+appName+'?_fcs_vhost='+hostname+'&ovpfv=2.1.4&'+auth
-    finalUrl = basertmp
-    finalUrl += " playpath=" + stream 
-    finalUrl += " pageurl=" + common.args.url
-    finalUrl += " swfurl=" + swfUrl + " swfvfy=true"
-    if Trailer and not resolve:
-        finalname = Trailer+' Trailer'
-        item = xbmcgui.ListItem(finalname,path=finalUrl)
-        item.setInfo( type="Video", infoLabels={ "Title": finalname})
-        item.setProperty('IsPlayable', 'true')
-        xbmc.Player().play(finalUrl,item)
-    else:
-        item = xbmcgui.ListItem(path=finalUrl)
-        #item.setInfo( type="Video", infoLabels={ "Title": title})
-        xbmcplugin.setResolvedUrl(pluginhandle, True, item)
-    return basertmp, ip
-'''
