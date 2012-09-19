@@ -18,7 +18,7 @@ DEVICEID = 'A36VLPLQERSUGW1347221081338B0029Z3EH0'
 
 TV_LIST = "/s/ref=sr_nr_n_1?rh=n%3A2625373011%2Cn%3A%212644981011%2Cn%3A%212644982011%2Cn%3A2858778011%2Cp_85%3A2470955011%2Cn%3A2864549011&bbn=2858778011&ie=UTF8&qid=1334413870&rnid=2858778011"
 
-STREAM_URL = 'https://atv-ps.amazon.com/cdp/catalog/GetStreamingUrlSets?format=json&version=1&asin=%s&deviceTypeID=%s&xws-fa-ov=true&token=%s&firmware=%s&customerID=%s&deviceID=%s' # % (values['asin'], values['deviceTypeID'], values['token'], FIRMWARE, values['customerID'], DEVICEID)
+STREAM_URL = 'https://atv-ps.amazon.com/cdp/catalog/GetStreamingUrlSets?format=json&version=1&asin=%s&deviceTypeID=%s&xws-fa-ov=false&token=%s&firmware=%s&customerID=%s&deviceID=%s' # % (values['asin'], values['deviceTypeID'], values['token'], FIRMWARE, values['customerID'], DEVICEID)
 
 ####################################################################################################
 def Start():
